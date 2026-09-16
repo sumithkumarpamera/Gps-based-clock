@@ -1,0 +1,409 @@
+#include "F2837xD_device.h" 
+#include "F2837xD_Examples.h" 
+#include "stdio.h" 
+#include "stdlib.h" 
+#include "string.h" 
+//Macros 
+#define NMEA_LENGTH 83 
+#define DATE_LENGTH 7 
+#define TIME_LENGTH 9 
+#define OLED CMD 0x0000 
+#define OLED_DATA 0x0002 
+#define OLED_DATA_L1 0x0080 
+#define OLED_DATA_L2 0x0000 
+#define OLED_DATA_L3 0x0094 
+#define OLED_DATA_L4 0x00D4 
+//Global Variables 
+unsigned int i; 
+unsigned int count; 
+unsigned int nmeaIndex; 
+char recdata; 
+char rec [NMEA_LENGTH] 
+char time [TIME_LENGTH] 
+char date [DATE_LENGTH] 
+char fdate[15]= ""; 
+char ftime [15] 
+char ftime1 [15] 
+char ftime2[15] 
+char ftime3 [15] 
+char display [TIME_LENGTH]= ""; 
+char display1[15] 
+char display2[15] 
+char display3 [15] 
+char time1 [TIME_LENGTH] 
+struct Ist time 
+{ 
+unsigned int hrs; 
+unsigned int min; 
+unsigned int sec; 
+}Ist_time, Jst_time, Est_time, UK_time; 
+#include "F2837xD_device.h" 
+#include "F2837xD_Examples.h" 
+#include "stdio.h" 
+#include "stdlib.h" 
+#include "string.h" 
+//Macros #define NMEA LENGTH 83 #define DATE_LENGTH 7 
+#define TIME LENGTH 9 
+#define OLED CMD 0x0000 
+#define OLED DATA 0x0002 
+#define OLED_DATA L1 0x0080 
+#define OLED DATA L20x0000 
+#define OLED DATA L3 0x0094 
+#define OLED DATA L4 0x0004 
+//Global Variables 
+unsigned int 1;  
+unsigned int count; 
+unsigned int nmeaIndex; 
+char recdata; 
+char rec[NMEA_LENGTH] ==" "; 
+char time [TIME_LENGTH] ==" "; 
+char date [DATE_LENGTH] ==" "; 
+char fdate [15] =" "; 
+char ftime [15] =" "; 
+char ftime1[15] =" "; 
+char ftime2[15] =" "; 
+char ftime3[15] =" "; 
+char display [TIME_LENGTH] =" "; 
+char display1[15] =" "; 
+char display2[15] =" "; 
+char time1 [TIME_LENGTH] =" "; 
+struct Ist_time { 
+unsigned int hrs; 
+unsigned int min; 
+unsigned int sec; 
+}Ist_time, Ist_time, Est_time, UK_time; 
+void Sci_Gpio_Init(void); 
+void Sci_Init(void); 
+interrupt void SciRx_isr(void); 
+void Spi_Gpio_Init(void); 
+void Spi Init(void); 
+void Time_ist(void); 
+void nmea_parse(const char sentence[]); 
+void oledinit(void); 
+ 
+void writedata(char); 
+void OLED_Display_data(char *str); 
+void writecmd(char); 
+void oled(char *ftime, char *ftime1, char *ftime2, char *ftime3); 
+void convert(char *date, char *time); 
+void main(void) 
+{ 
+InitSysCtrl(); 
+InitGpio(); 
+DINT; 
+InitPieCtrl(); 
+IER =0x0000; 
+IFR =0x0000; 
+InitPieVectTable(); 
+Sci_Gpio_Init(); 
+Spi_Gpio_Init(); 
+Sci_Init(); 
+Spi_Init(); 
+oledinit(); 
+while(1) 
+{ 
+} 
+} 
+void Sci_Init(void) 
+{ 
+EALLOW; 
+CpuSysRegs.CPUSYSLOCK1.bit.PCLKCR7 =1; 
+CpuSysRegs.PCLKCR7.bit.SCI_B=1; 
+EDIS; 
+ScibRegs.SCICTL1.bit.SWRESET=0; 
+ScibRegs.SCICTL1.all 
+=0; 
+ScibRegs.SCICCR.all=0x0007; 
+ScibRegs.SCIHBAUD.all=0X0002; 
+// txena, rxena 
+// char length 8 
+// 9600 
+ScibRegs.SCILBAUD.all=0X008A; 
+ScibRegs.SCICTL2.bit.RXBKIΝΤΕΝΑ 
+= 1; 
+ScibRegs.SCICTL1.bit.SWRESET 
+= 1; 
+// software reset 
+PieCtrlRegs.PIECTRL.bit.ENPIE 
+= 1; 
+PieCtrlRegs.PIEIER9.bit.INTx3 
+= 1; 
+EALLOW; 
+PieVectTable.SCIB_RX_INT 
+&SciRx_isr; 
+EDIS; 
+IER |=M_INT9; 
+EINT; 
+ERTM; 
+void Spi_Init(void) 
+{  
+SpiaRegs.SPICCR.all 0x000F; 
+SpiaRegs.SPICTL.all = 0x0007; 
+SpiaRegs.SPIBRR.bit.SPI_BIT_RATE= 0x7F; 
+SpiaRegs. SPICCR.bit.SPISWRESET = 1; 
+} 
+interrupt void SciRx_isr(void) 
+{ 
+count++; 
+recdata ScibRegs.SCIRXBUF.all; 
+if (recdata == '$') 
+{ 
+{ 
+if(rec[3] == 'R') 
+nmea_parse(rec); 
+Time_ist(); 
+// UTC to IST 
+oledinit(); 
+convert(date, time); 
+oled (ftime, ftime1, ftime2, ftime3); 
+writecmd (OLED_DATA_L1); 
+OLED_Display_data(display); 
+writecmd(OLED_DATA_L2); 
+OLED_Display_data(display1); 
+writecmd (OLED DATA_L3); 
+OLED Display data(display2); 
+OLED_Display_data(display2); 
+writecmd(OLED_DATA_L4); 
+OLED_Display_data(display3); 
+} 
+count = 0; 
+nmeaIndex = 0; 
+} 
+{ 
+} 
+if(nmeaIndex < 83) 
+rec[nmeaIndex++] = recdata; 
+PieCtrlRegs.PIEACK. all = PIEACK_GROUP9; 
+} 
+void Sci_Gpio_Init(void) 
+{ 
+EALLOW; 
+GpioCtrlRegs.GPAGMUX2.bit.GP1018 = 0; //SCI B TX 
+GpioCtrlRegs.GPAMUX2.bit.GP1018 =2; 
+GpioCtrlRegs.GPADIR.bit.GPI018 =1; 
+GpioCtrlRegs.GPAPUD.bit.GPIO18 = 0; 
+GpioCtrlRegs.GPAGMUX2.bit.GP1019 = 0; 
+GpioCtrlRegs.GPAMUX2.bit.GP1019 = 2; 
+GpioCtrlRegs.GPADIR.bit.GPIO19 = 0; 
+GpioCtrlRegs.GPAPUD.bit.GPIO19 = 0; 
+EDIS; 
+} 
+//SCI B RX 
+void Spi_Gpio_Init(void) 
+{ 
+EALLOW; 
+GpioCtrlRegs.GPBGMUX2.bit.GP1058=3; 
+GpioCtrlRegs.GPBMUX2.bit.GP1058=3; 
+MEDHA 
+Page34 
+GPS CLOCK SYSTEM using GPS Module, LaunchXL, and OLED 
+GpioCtrlRegs.GPBDIR.bit.GP1058=1; //SIMO 
+GpioCtrlRegs.GPBPUD.bit.GPIO58=0; 
+GpioCtrlRegs.GPBMUX2.bit.GPIO59=3; 
+GpioCtrlRegs.GPBGMUX2.bit.GPIO59=3; //SOMI 
+GpioCtrlRegs.GPBDIR.bit.GPIO59=0; 
+GpioCtrlRegs.GPBPUD.bit.GPIO59=0; 
+GpioCtrlRegs.GPBGMUX2.bit.GP1060=3; //CLK 
+GpioCtrlRegs.GPBMUX2.bit.GPIO60=3; 
+GpioCtrlRegs.GPBPUD.bit.GP1060=0; 
+GpioCtrlRegs.GPBGMUX2.bit.GP1061=3; 
+GpioCtrlRegs.GPBMUX2.bit.GP1061=3; 
+GpioCtrlRegs.GPBPUD.bit.GP1061=0; 
+//CS 
+EDIS; 
+} 
+void nmea_parse(const char sentence[]) 
+{ 
+unsigned int i 
+= 0; 
+unsigned int j 
+= 0; 
+unsigned int time_len 
+0; 
+unsigned int date _len 
+= 0; 
+unsigned int commacount 
+= 0; 
+unsigned int comm countindex 
+= 0; 
+for(j= 7; sentence[j] != ',' && sentence[j] !='\0'; j++) //? 
+{ 
+} 
+time[time_len++] sentence[j]; 
+time[time_len] = '\0'; 
+for(j = 0; sentence[j] != '\0'; j++) 
+{ 
+if (sentence[j] == ',') 
+{ 
+commacount++; 
+} 
+{ 
+if(commacount == 9) 
+comm_countindex = j; 
+for(i = comm_countindex+1; i < comm_countindex + 7; i++) 
+{ 
+date[date_len++] sentence[i]; 
+} 
+break; 
+} 
+} 
+} 
+void Time_ist(void) 
+{ 
+sscanf(time, 
+"%2d%2d%2d", 
+&Ist_time.sec);    
+sscanf(time, 
+&Jst_time.sec); 
+"%2d%2d%2d", 
+sscanf(time, 
+&Est_time.min, &Est_time.sec); 
+&Ist_time.hrs, 
+&Jst_time.hrs, 
+"%2d%2d%2d", 
+&Ist_time.min, 
+&Jst_time.min, 
+&Est_time.hrs, 
+sscanf(time, 
+"%2d%2d%2d", 
+&UK_time.hrs, 
+&UK_time.sec); 
+Ist_time.hrs += 5; Ist_time.min += 30; //INDIAN 
+Jst_time.hrs += 9; 
+Jst_time.min += 0; //JAPAN 
+Est_time.hrs=4; 
+Est_time.min += 0; //NEWYORK 
+UK_time.hrs += 1; 
+UK_time.min += 0; //UK 
+while(Ist_time.min >=60) 
+{ 
+Ist_time.min-= 60; 
+Ist_time.hrs++; 
+} while(Ist_time.hrs >-24) 
+{ 
+} 
+Ist_time.hrs-=24; 
+ftime[0]= (Ist_time.hrs/10)+'0'; 
+ftime[1]= (Ist_time.hrs%10)+'0'; 
+ftime[2]= ':'; 
+ftime[3]= (Ist_time.min/10)+'0'; 
+ftime[4]= (Ist_time.min%10)+'0'; 
+ftime[5]= ':‟; 
+ftime[6] =(Ist_time.sec/10)+'0'; 
+ftime [7] =(Ist_time.sec%10)+'0'; 
+ftime [8]= '\0'; 
+ftime1[0]= (Jst_time.hrs/10)+'0'; 
+&UK_time.min, 
+ftime1[1]= (Jst_time.hrs%10)+'0'; 
+ftime1[2]='':'; 
+ftime1[3]= (Ist_time.min/10)+'0'; 
+ftime1[4]= (Ist_time.min%10)+'0'; 
+ftime1[5]=':'; 
+ftime1[6]= (Ist_time.sec/10)+'0'; 
+ftime1[7] =(Ist_time.sec%10)+'0'; 
+ftime1[8]= '\0'; 
+ftime2[0]= (Est_time.hrs/10)+'0'; 
+ftime2[1]= (Est_time.hrs%10)+'0'; 
+ftime2[2]=':'; 
+ftime2[3]= (Est_time.min/10)+'0'; 
+ftime2[4]=(Est_time.min%10)+'0'; 
+ftime2[5]=':'; 
+ftime2[6]= (Est_time.sec/10)+'0'; 
+ftime2[7]-=(Est_time.sec%10)+'0'; 
+time2[8] ='\0'; 
+ftime3[0]= (UK_time.hrs/10)+'0'; 
+ftime3[1]= (UK time.hrs%10)+'0'; 
+time3[2]=:'; 
+ftime3[3] =(UK_time.min/10)+'0'; 
+ftime3[4]= (UK_time.min%10)+'0'; 
+time3[5]=:'; 
+ftime3[6]= (UK_time.sec/10)+'0'; 
+ftime3[7]= (UK_time.sec%10)+'0'; 
+ftime3[8]= '\0'; 
+void oled_init(void) { 
+GpioDataRegs.GPBCLEAR.bit.GPIO61 = 1; 
+writecmd(0x38); //function set (DL 8bit, English) 
+DELAY_US(2000); 
+writecmd(0x08); 
+//display off 
+DELAY_US(1000); 
+writecmd(0x01); 
+//display clear 
+DELAY_US (3000); 
+writecmd(0x06); 
+//entry mode set (cursor auto increment) 
+DELAY_US(1000); 
+//home command (cursor initial position) 
+writecmd(0x02); 
+DELAY_US(1000); 
+writecmd(0x0F); //display on 
+DELAY_US(1000); 
+GpioDataRegs.GPBSET.bit.GPIO61=1; //SET CS 
+EDIS; 
+} 
+void writecmd(char cmd) 
+{ 
+EALLOW; 
+GpioDataRegs.GPBCLEAR.bit.GP1061=1; //clear CS 
+GpioDataRegs, GPBCLEAR.bit.GPIO611; //clear CS 
+while(SpiaRegs.SPISTS.bit、BUFFULL_FLAG == 1); 
+SpiaRegs.SPITXBUF ((OLED_CMD <<8) | cmd) << 6; 
+DELAY_US (1000); 
+GpioDataRegs.GPBSET.bit.GPIO61= 1; //SET CS 
+EDIS; 
+} 
+void writedata(char data) 
+{ 
+EALLOW; 
+GpioDataRegs.GPBCLEAR.bit.GPIO61 = 1; //clear CS 
+while(SpiaRegs.SPISTS.bit.BUFFULL_FLAG 
+== 
+SpiaRegs.SPITXBUF ((OLED_DATA << 8) | data) << 6; 
+DELAY_US(1000); 
+GpioDataRegs.GPBSET.bit.GPIO611; //SET CS 
+EDIS; 
+} 
+void OLED_Display_data(char *str) 
+{ 
+while(*str) 
+{ 
+writedata(*str++); 
+} 
+} 
+void convert(char *date, char *time) 
+A 
+{ 
+Time_ist(); 
+//ftime[0]= time[0]; 
+//ftime[1]= time[1]; 
+//ftime [2]=':'; 
+//ftime[3]=time[2]; 
+//ftime[4]= time[3]; 
+//ftime [5]=':'; 
+//ftime[6] =time[4]; 
+//ftime[7] =time[5]; 
+1);  
+//ftime[8]= '\0'; 
+fdate[0]= date[0]; 
+fdate[1]= date[1]; 
+fdate[2]= '/'; 
+fdate[3]= date[2]; 
+fdate[4]= date[3]; 
+fdate [5] = '/'; 
+fdate [6]= '2'; 
+fdate [7]= '0'; 
+fdate[8]= date[4]; 
+fdate[9]= date[5]; 
+fdate[10]= '\0'; 
+} 
+void oled(char *ftime, char *ftime1, char *ftime2, char *ftime3) 
+{ 
+strcpy(display, "IND: "); 
+strcat(display, ftime); 
+strcpy(display1, "JAP:"); 
+strcat(display1, ftime1); 
+strcpy(display2, "NYK:"); 
+strcat(display2, ftime2); 
+strcpy(display3, "UK: "); 
+strcat(display3, ftime3); 
+}
